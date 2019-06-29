@@ -1,0 +1,72 @@
+<head>
+  <style> body { margin: 0; } </style>
+
+  <!-- <script src="//unpkg.com/3d-force-graph"></script> -->
+  <script src="../../dist/3d-force-graph.js"></script>
+  <script src="../../dist/three.js"></script>
+  <script src="../../dist/three-spritetext.min.js"></script>
+  
+</head>
+
+<body>
+
+  <div id="3d-graph"></div>
+
+  <script>
+    const elem = document.getElementById('3d-graph');
+    let highlightNodes = [];
+    let highlightLink = null;
+
+    const Graph = ForceGraph3D()(elem)
+      .numDimensions(3)
+      .jsonUrl('./hong_out.json')
+      .nodeThreeObject(node => {
+        // use a sphere as a drag handle
+        const obj = new THREE.Mesh(
+          new THREE.SphereGeometry(10),
+          new THREE.MeshBasicMaterial({ depthWrite: false, transparent: true, opacity: 0 })
+        );
+        if(node.image){
+          // add img sprite as child
+          const imgTexture = new THREE.TextureLoader().load(node.image);
+          const material = new THREE.SpriteMaterial({ map: imgTexture });
+          const sprite = new THREE.Sprite(material);
+          sprite.scale.set(12, 12);
+          obj.add(sprite);
+        }else{
+          // add text sprite as child
+          const sprite = new SpriteText(node.title);
+          sprite.color = node.color;
+          sprite.textHeight = 8;
+          obj.add(sprite);
+        }
+        
+        
+        return obj;
+      })
+      .nodeLabel(node => `${node.title}`)
+      .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
+      .linkLabel("label")
+      .linkAutoColorBy("label")
+      .linkWidth(link => link === highlightLink ? 4 : 1)
+      .linkDirectionalParticles(link => link === highlightLink ? 4 : 0)
+      .linkDirectionalParticleWidth(4)
+      .onNodeHover(node => {
+          // no state change
+        if ((!node && !highlightNodes.length) || (highlightNodes.length === 1 && highlightNodes[0] === node)) return;
+        highlightNodes = node ? [node] : [];
+        updateGeometries();
+      })
+      .onLinkHover(link => {
+        // no state change
+        if (highlightLink === link) return;
+        highlightLink = link;
+        highlightNodes = link ? [link.source, link.target] : [];
+        updateGeometries();
+      });
+      function updateGeometries() {
+      Graph.nodeRelSize(4); // trigger update of 3d objects in scene
+    }
+      // .onNodeClick(node => window.open(`https://bl.ocks.org/${node.}/${node.id}`, '_blank'));
+  </script>
+</body>
